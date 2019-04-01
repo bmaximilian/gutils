@@ -3,9 +3,11 @@ module github.com/bmaximilian/gutils
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/fatih/color v1.7.0
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/logger v1.0.1
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/levigross/grequests v0.0.0-20190130132859-37c80f76a0da
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/onsi/ginkgo v1.8.0
