@@ -19,3 +19,4 @@ build/
 *.out
 
 *.log
+gutils.config.local.yaml
