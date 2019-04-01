@@ -2,6 +2,7 @@ package projects
 
 import (
 	"github.com/bmaximilian/gutils/pkg/jira/connect"
+	"github.com/bmaximilian/gutils/pkg/jira/projects/models"
 	"github.com/levigross/grequests"
 )
 
@@ -13,10 +14,17 @@ func NewJiraProjectsRequestService(jiraRequestService *connect.JiraRequestServic
 	return &JiraProjectsRequestService{requestService: jiraRequestService}
 }
 
-func (j *JiraProjectsRequestService) GetAllProjects() (*grequests.Response, error) {
-	return j.requestService.Get("/project", &grequests.RequestOptions{})
-}
+func (j *JiraProjectsRequestService) GetAllProjects() (*[]models.Project, error) {
+	parsedResponse := make([]models.Project, 0)
+	response, err := j.requestService.Get("/project", &grequests.RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
 
-func (j *JiraProjectsRequestService) GetUpdatedWorklogs() (*grequests.Response, error) {
-	return j.requestService.Get("/worklog/updated", &grequests.RequestOptions{})
+	jsonErr := response.JSON(&parsedResponse)
+	if jsonErr != nil {
+		return nil, err
+	}
+
+	return &parsedResponse, nil
 }
