@@ -12,14 +12,17 @@ import (
 	googleLogger "github.com/google/logger"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"github.com/tealeg/xlsx"
 	"log"
 	"math"
 	"os"
 	"sort"
+	"time"
 )
 
 var projectsFilter string
 var user string
+var generateReportFlag bool
 var startDateFlag string
 var endDateFlag string
 
@@ -97,40 +100,126 @@ var Command = &cobra.Command{
 			})
 		}
 
+		file := xlsx.NewFile()
+
 		if userNameFilter == "" {
+			sheet, createSheetErr := file.AddSheet("Worklog")
+			if createSheetErr != nil {
+				fmt.Printf(createSheetErr.Error())
+			}
+
+			row := sheet.AddRow()
+			cell := row.AddCell()
+			cell.Value = "Date"
+			cell = row.AddCell()
+			cell.Value = "Ticket"
+			cell = row.AddCell()
+			cell.Value = "Time Spent"
+			cell = row.AddCell()
+			cell.Value = "Author"
+			cell = row.AddCell()
+			cell.Value = "Comment"
+
 			table.SetHeader([]string{"Date", "Ticket", "Time Spent", "Author"})
 
 			for _, workLogReportItem := range workLogReportItems {
 				table.Append([]string{
-					workLogReportItem.StartedDate.Format("2006-01-02") + " " + workLogReportItem.StartedDate.Format("15:04"),
+					workLogReportItem.StartedDate.Format("Mon") + " " + workLogReportItem.StartedDate.Format("2006-01-02") + " " + workLogReportItem.StartedDate.Format("15:04"),
 					workLogReportItem.IssueKey,
 					workLogReportItem.TimeSpent,
 					workLogReportItem.AuthorDisplayName,
 				})
 				timeSummaryInSeconds += workLogReportItem.TimeSpentSeconds
+
+				row = sheet.AddRow()
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.StartedDate.Format("Mon") + " " + workLogReportItem.StartedDate.Format("2006-01-02")
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.IssueKey
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.TimeSpent
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.AuthorDisplayName
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.Comment
 			}
 
 			timeSummaryInHours := (float64(timeSummaryInSeconds) / 60.00) / 60.00
-			remainingMinutes := timeSummaryInHours - math.Ceil(timeSummaryInHours)
-			table.SetFooter([]string{"", "", "", fmt.Sprintf("%vh %vm", math.Ceil(timeSummaryInHours), remainingMinutes*60)})
+			remainingMinutes := timeSummaryInHours - math.Floor(timeSummaryInHours)
+			table.SetFooter([]string{"", "", "", fmt.Sprintf("%vh %vm", math.Floor(timeSummaryInHours), remainingMinutes*60)})
+
+			row = sheet.AddRow()
+			cell = row.AddCell()
+			cell.Value = ""
+			cell = row.AddCell()
+			cell.Value = ""
+			cell = row.AddCell()
+			cell.Value = fmt.Sprintf("%vh %vm", math.Floor(timeSummaryInHours), remainingMinutes*60)
+			cell = row.AddCell()
+			cell.Value = ""
+			cell = row.AddCell()
+			cell.Value = ""
 		} else {
+			sheet, createSheetErr := file.AddSheet("Worklog")
+			if createSheetErr != nil {
+				fmt.Printf(createSheetErr.Error())
+			}
+
+			row := sheet.AddRow()
+			cell := row.AddCell()
+			cell.Value = "Date"
+			cell = row.AddCell()
+			cell.Value = "Ticket"
+			cell = row.AddCell()
+			cell.Value = "Time Spent"
+			cell = row.AddCell()
+			cell.Value = "Comment"
+
 			table.SetHeader([]string{"Date", "Ticket", "Time Spent"})
 
 			for _, workLogReportItem := range workLogReportItems {
 				table.Append([]string{
-					workLogReportItem.StartedDate.Format("2006-01-02") + " " + workLogReportItem.StartedDate.Format("15:04"),
+					workLogReportItem.StartedDate.Format("Mon") + " " + workLogReportItem.StartedDate.Format("2006-01-02") + " " + workLogReportItem.StartedDate.Format("15:04"),
 					workLogReportItem.IssueKey,
 					workLogReportItem.TimeSpent,
 				})
 				timeSummaryInSeconds += workLogReportItem.TimeSpentSeconds
+
+				row = sheet.AddRow()
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.StartedDate.Format("Mon") + " " + workLogReportItem.StartedDate.Format("2006-01-02")
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.IssueKey
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.TimeSpent
+				cell = row.AddCell()
+				cell.Value = workLogReportItem.Comment
 			}
 
 			timeSummaryInHours := (float64(timeSummaryInSeconds) / 60.00) / 60.00
 			remainingMinutes := timeSummaryInHours - math.Floor(timeSummaryInHours)
 			table.SetFooter([]string{"", "", fmt.Sprintf("%vh %vm", math.Floor(timeSummaryInHours), remainingMinutes*60)})
+
+			row = sheet.AddRow()
+			cell = row.AddCell()
+			cell.Value = ""
+			cell = row.AddCell()
+			cell.Value = ""
+			cell = row.AddCell()
+			cell.Value = fmt.Sprintf("%vh %vm", math.Floor(timeSummaryInHours), remainingMinutes*60)
+			cell = row.AddCell()
+			cell.Value = ""
+			cell = row.AddCell()
+			cell.Value = ""
 		}
 
 		table.Render()
+		if cmd.Flag("report").Value.String() == "true" {
+			xlsxWriteErr := file.Save("report_" + userNameFilter + "_" + time.Now().Format(time.RFC3339) + ".xlsx")
+			if xlsxWriteErr != nil {
+				fmt.Printf(xlsxWriteErr.Error())
+			}
+		}
 	},
 }
 
@@ -169,5 +258,12 @@ func InitCommand() {
 		"t",
 		"",
 		"The end date",
+	)
+	Command.Flags().BoolVarP(
+		&generateReportFlag,
+		"report",
+		"r",
+		false,
+		"Pass that flag to generate an xslx report",
 	)
 }

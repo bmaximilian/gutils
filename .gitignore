@@ -20,3 +20,4 @@ build/
 
 *.log
 gutils.config.local.yaml
+*.xslx
