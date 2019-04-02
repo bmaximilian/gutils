@@ -1,9 +1,13 @@
 package models
 
+import "time"
+
 type WorkLogReportItem struct {
 	IssueKey          string
 	Started           string
+	StartedDate       time.Time
 	Updated           string
+	UpdatedDate       time.Time
 	TimeSpent         string
 	TimeSpentSeconds  int64
 	WorkLogId         string

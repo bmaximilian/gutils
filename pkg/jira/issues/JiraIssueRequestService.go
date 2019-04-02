@@ -1,6 +1,7 @@
 package issues
 
 import (
+	"github.com/araddon/dateparse"
 	"github.com/bmaximilian/gutils/pkg/jira/connect"
 	"github.com/bmaximilian/gutils/pkg/jira/issues/models"
 	"github.com/levigross/grequests"
@@ -58,10 +59,22 @@ func (j *JiraIssueRequestService) GenerateWorkLogReportForIssues(issues *[]model
 		}
 
 		for _, workLog := range workLogs {
+			parsedStart, startParseErr := dateparse.ParseAny(workLog.Started)
+			if startParseErr != nil {
+				return nil, startParseErr
+			}
+
+			parsedUpdate, updateParseErr := dateparse.ParseAny(workLog.Updated)
+			if updateParseErr != nil {
+				return nil, updateParseErr
+			}
+
 			workLogReportItems = append(workLogReportItems, models.WorkLogReportItem{
 				IssueKey:          issue.Key,
 				Started:           workLog.Started,
+				StartedDate:       parsedStart,
 				Updated:           workLog.Updated,
+				UpdatedDate:       parsedUpdate,
 				TimeSpent:         workLog.TimeSpent,
 				TimeSpentSeconds:  workLog.TimeSpentSeconds,
 				WorkLogId:         workLog.Id,

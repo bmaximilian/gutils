@@ -2,9 +2,12 @@ package list
 
 import (
 	"fmt"
+	"github.com/araddon/dateparse"
 	"github.com/bmaximilian/gutils/internal/jira/util"
 	"github.com/bmaximilian/gutils/pkg/jira/issues"
+	"github.com/bmaximilian/gutils/pkg/jira/issues/models"
 	"github.com/bmaximilian/gutils/pkg/jira/projects"
+	jiraUtil "github.com/bmaximilian/gutils/pkg/jira/util"
 	"github.com/bmaximilian/gutils/pkg/util/logger"
 	googleLogger "github.com/google/logger"
 	"github.com/olekukonko/tablewriter"
@@ -13,11 +16,12 @@ import (
 	"math"
 	"os"
 	"sort"
-	"time"
 )
 
 var projectsFilter string
 var user string
+var startDateFlag string
+var endDateFlag string
 
 var Command = &cobra.Command{
 	Use:   "list",
@@ -33,6 +37,8 @@ var Command = &cobra.Command{
 
 		projectKeys := cmd.Flag("projects").Value.String()
 		userNameFilter := cmd.Flag("user").Value.String()
+		fromDateFilter := cmd.Flag("from").Value.String()
+		toDateFilter := cmd.Flag("to").Value.String()
 
 		if projectKeys == "all" {
 			projectKeys = ""
@@ -68,22 +74,35 @@ var Command = &cobra.Command{
 
 		workLogReportItems := *rawWorkLogReportItems
 		sort.Slice(workLogReportItems, func(i, j int) bool {
-			parsedITime, timeParseErrI := time.Parse("2006-01-02T15:04:05.999+0100", workLogReportItems[i].Started)
-			parsedJTime, timeParseErrJ := time.Parse("2006-01-02T15:04:05.999+0100", workLogReportItems[j].Started)
-			if timeParseErrI != nil || timeParseErrJ != nil {
-				l.Fatalln(timeParseErrJ, timeParseErrI)
-			}
-			return parsedITime.Before(parsedJTime)
+			return workLogReportItems[i].StartedDate.Before(workLogReportItems[j].StartedDate)
 		})
+
+		if fromDateFilter != "" {
+			parsedFromDate, fromParseErr := dateparse.ParseAny(fromDateFilter + " 00:00:01+0100")
+			if fromParseErr != nil {
+				l.Fatalln(fromParseErr)
+			}
+			workLogReportItems = jiraUtil.FilterWorklogs(workLogReportItems, func(item models.WorkLogReportItem) bool {
+				return item.StartedDate.After(parsedFromDate) || item.StartedDate.Equal(parsedFromDate)
+			})
+		}
+
+		if toDateFilter != "" {
+			parsedToDate, toParseErr := dateparse.ParseAny(toDateFilter + " 23:59:59+0100")
+			if toParseErr != nil {
+				l.Fatalln(toParseErr)
+			}
+			workLogReportItems = jiraUtil.FilterWorklogs(workLogReportItems, func(item models.WorkLogReportItem) bool {
+				return item.StartedDate.Before(parsedToDate) || item.StartedDate.Equal(parsedToDate)
+			})
+		}
 
 		if userNameFilter == "" {
 			table.SetHeader([]string{"Date", "Ticket", "Time Spent", "Author"})
 
 			for _, workLogReportItem := range workLogReportItems {
-				parsedStartTime, _ := time.Parse("2006-01-02T15:04:05.999+0100", workLogReportItem.Started)
-
 				table.Append([]string{
-					parsedStartTime.Format("2006-01-02") + " " + parsedStartTime.Format("15:04"),
+					workLogReportItem.StartedDate.Format("2006-01-02") + " " + workLogReportItem.StartedDate.Format("15:04"),
 					workLogReportItem.IssueKey,
 					workLogReportItem.TimeSpent,
 					workLogReportItem.AuthorDisplayName,
@@ -91,26 +110,24 @@ var Command = &cobra.Command{
 				timeSummaryInSeconds += workLogReportItem.TimeSpentSeconds
 			}
 
-			timeSummaryInHours := float64((timeSummaryInSeconds / 60.00) / 60.00)
+			timeSummaryInHours := (float64(timeSummaryInSeconds) / 60.00) / 60.00
 			remainingMinutes := timeSummaryInHours - math.Ceil(timeSummaryInHours)
 			table.SetFooter([]string{"", "", "", fmt.Sprintf("%vh %vm", math.Ceil(timeSummaryInHours), remainingMinutes*60)})
 		} else {
 			table.SetHeader([]string{"Date", "Ticket", "Time Spent"})
 
 			for _, workLogReportItem := range workLogReportItems {
-				parsedStartTime, _ := time.Parse("2006-01-02T15:04:05.999+0100", workLogReportItem.Started)
-
 				table.Append([]string{
-					parsedStartTime.Format("2006-01-02") + " " + parsedStartTime.Format("15:04"),
+					workLogReportItem.StartedDate.Format("2006-01-02") + " " + workLogReportItem.StartedDate.Format("15:04"),
 					workLogReportItem.IssueKey,
 					workLogReportItem.TimeSpent,
 				})
 				timeSummaryInSeconds += workLogReportItem.TimeSpentSeconds
 			}
 
-			timeSummaryInHours := float64((timeSummaryInSeconds / 60.00) / 60.00)
-			remainingMinutes := timeSummaryInHours - math.Ceil(timeSummaryInHours)
-			table.SetFooter([]string{"", "", fmt.Sprintf("%vh %vm", math.Ceil(timeSummaryInHours), remainingMinutes*60)})
+			timeSummaryInHours := (float64(timeSummaryInSeconds) / 60.00) / 60.00
+			remainingMinutes := timeSummaryInHours - math.Floor(timeSummaryInHours)
+			table.SetFooter([]string{"", "", fmt.Sprintf("%vh %vm", math.Floor(timeSummaryInHours), remainingMinutes*60)})
 		}
 
 		table.Render()
@@ -136,5 +153,21 @@ func InitCommand() {
 		"p",
 		"all",
 		"The projects that should be looked up",
+	)
+
+	Command.Flags().StringVarP(
+		&startDateFlag,
+		"from",
+		"s",
+		"",
+		"The start date",
+	)
+
+	Command.Flags().StringVarP(
+		&endDateFlag,
+		"to",
+		"t",
+		"",
+		"The end date",
 	)
 }
