@@ -9,8 +9,11 @@ type XLSXExportOptions struct {
 	WithAuthor bool
 }
 
-func GenerateWorklogXLSXExportSheet(file *xlsx.File, workLogReportItems []models.WorkLogReportItem, options *XLSXExportOptions) error {
-	// file := xlsx.NewFile()
+func GenerateWorklogXLSXExportSheet(
+	file *xlsx.File,
+	workLogReportItems []models.WorkLogReportItem,
+	options *XLSXExportOptions,
+) error {
 	sheet, createSheetErr := file.AddSheet("Worklog")
 	if createSheetErr != nil {
 		return createSheetErr
@@ -25,10 +28,11 @@ func GenerateWorklogXLSXExportSheet(file *xlsx.File, workLogReportItems []models
 	}...)
 	addRowToSheetForMap(sheet, headerSlice)
 
-	generateBody(sheet, workLogReportItems, func(item interface{}) []string {
+	generateSheetBody(sheet, workLogReportItems, func(item interface{}) []string {
 		workLogReportItem := item.(models.WorkLogReportItem)
 		bodySlice := []string{
-			workLogReportItem.StartedDate.Format("Mon") + " " + workLogReportItem.StartedDate.Format("2006-01-02"),
+			workLogReportItem.StartedDate.Format("Mon") + " " +
+				workLogReportItem.StartedDate.Format("2006-01-02"),
 			workLogReportItem.IssueKey,
 			workLogReportItem.TimeSpent,
 		}
@@ -50,7 +54,7 @@ func GenerateWorklogXLSXExportSheet(file *xlsx.File, workLogReportItems []models
 	footerSlice = append(footerSlice, []string{
 		"",
 	}...)
-	addRowToSheetForMap(sheet, []string{"", "", GetWorkLogSummaryTimeFormatted(workLogReportItems), "", ""})
+	addRowToSheetForMap(sheet, footerSlice)
 
 	return nil
 }
@@ -64,7 +68,7 @@ func addRowToSheetForMap(sheet *xlsx.Sheet, headerMap []string) {
 	}
 }
 
-func generateBody(sheet *xlsx.Sheet, workLogReportItems []models.WorkLogReportItem, getBodyRowValues func(item interface{}) []string) {
+func generateSheetBody(sheet *xlsx.Sheet, workLogReportItems []models.WorkLogReportItem, getBodyRowValues func(item interface{}) []string) {
 	for _, item := range workLogReportItems {
 		addRowToSheetForMap(sheet, getBodyRowValues(item))
 	}

@@ -55,37 +55,15 @@ var Command = &cobra.Command{
 			l.Fatalln(filterErr)
 		}
 
-		if userNameFilter == "" {
-			table.SetHeader([]string{"Date", "Ticket", "Time Spent", "Author"})
-
-			for _, workLogReportItem := range workLogReportItems {
-				table.Append([]string{
-					workLogReportItem.StartedDate.Format("Mon") + " " + workLogReportItem.StartedDate.Format("2006-01-02") + " " + workLogReportItem.StartedDate.Format("15:04"),
-					workLogReportItem.IssueKey,
-					workLogReportItem.TimeSpent,
-					workLogReportItem.AuthorDisplayName,
-				})
-			}
-
-			table.SetFooter([]string{"", "", "", jiraUtil.GetWorkLogSummaryTimeFormatted(workLogReportItems)})
-		} else {
-			table.SetHeader([]string{"Date", "Ticket", "Time Spent"})
-
-			for _, workLogReportItem := range workLogReportItems {
-				table.Append([]string{
-					workLogReportItem.StartedDate.Format("Mon") + " " + workLogReportItem.StartedDate.Format("2006-01-02") + " " + workLogReportItem.StartedDate.Format("15:04"),
-					workLogReportItem.IssueKey,
-					workLogReportItem.TimeSpent,
-				})
-			}
-
-			table.SetFooter([]string{"", "", jiraUtil.GetWorkLogSummaryTimeFormatted(workLogReportItems)})
-		}
+		jiraUtil.GenerateWorklogTable(table, workLogReportItems, &jiraUtil.TableOptions{WithAuthor: userNameFilter == ""})
 
 		table.Render()
+
 		if cmd.Flag("report").Value.String() == "true" {
 			file := xlsx.NewFile()
-			xlsxCreateErr := jiraUtil.GenerateWorklogXLSXExportSheet(file, workLogReportItems, &jiraUtil.XLSXExportOptions{})
+			xlsxCreateErr := jiraUtil.GenerateWorklogXLSXExportSheet(file, workLogReportItems, &jiraUtil.XLSXExportOptions{
+				WithAuthor: userNameFilter == "",
+			})
 			if xlsxCreateErr != nil {
 				l.Fatalln(xlsxCreateErr.Error())
 			}

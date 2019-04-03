@@ -19,5 +19,6 @@ build/
 *.out
 
 *.log
+gutils.config.development.yaml
 gutils.config.local.yaml
 *.xslx
