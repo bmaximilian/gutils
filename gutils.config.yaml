@@ -1,7 +1,7 @@
 calculate:
   scale: 2.5
 jira:
-  url:
-  cert:
-  key:
-  token:
+  servers:
+    my-jira:
+      url:
+      token:

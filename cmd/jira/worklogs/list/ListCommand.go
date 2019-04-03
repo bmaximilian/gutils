@@ -26,6 +26,7 @@ var Command = &cobra.Command{
 		l := logger.GetLogger()
 		googleLogger.SetFlags(log.LUTC)
 
+		server := cmd.Flag("server").Value.String()
 		projectKeys := cmd.Flag("projects").Value.String()
 		userNameFilter := cmd.Flag("user").Value.String()
 		fromDateFilter := cmd.Flag("from").Value.String()
@@ -33,7 +34,11 @@ var Command = &cobra.Command{
 
 		table := tablewriter.NewWriter(os.Stdout)
 
-		workLogReportItemsRaw, fetchWorkLogItemsErr := jiraUtil.GetWorkLogReportForProjectsAndUser(util.GetJiraRequestService(), projectKeys, userNameFilter)
+		workLogReportItemsRaw, fetchWorkLogItemsErr := jiraUtil.GetWorkLogReportForProjectsAndUser(
+			util.GetJiraRequestService(server),
+			projectKeys,
+			userNameFilter,
+		)
 		if fetchWorkLogItemsErr != nil {
 			l.Fatalln(fetchWorkLogItemsErr)
 		}
@@ -100,7 +105,7 @@ func InitCommand() {
 	Command.Flags().StringVarP(
 		&startDateFlag,
 		"from",
-		"s",
+		"f",
 		"",
 		"The start date",
 	)

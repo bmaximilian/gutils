@@ -5,13 +5,8 @@ import (
 	"github.com/levigross/grequests"
 	"net/http"
 	"reflect"
+	"strconv"
 )
-
-type TLSConfig struct {
-	CertPath string
-	KeyPath  string
-	Password string
-}
 
 type JiraRequestService struct {
 	baseUrl               string
@@ -20,11 +15,11 @@ type JiraRequestService struct {
 	requestOptions        *grequests.RequestOptions
 }
 
-func NewJiraRequestService(baseUrl string, defaultEndpointPrefix string, authorizationToken string, tlsConfigObject *TLSConfig) (*JiraRequestService, error) {
+func NewJiraRequestService(config *JiraServerConfig) (*JiraRequestService, error) {
 	tlsConfig := tls.Config{}
 
-	if tlsConfigObject.CertPath != "" {
-		cert, err := tls.LoadX509KeyPair(tlsConfigObject.CertPath, tlsConfigObject.KeyPath)
+	if config.TlsConfig.CertPath != "" {
+		cert, err := tls.LoadX509KeyPair(config.TlsConfig.CertPath, config.TlsConfig.KeyPath)
 		if err != nil {
 			return nil, err
 		}
@@ -35,14 +30,14 @@ func NewJiraRequestService(baseUrl string, defaultEndpointPrefix string, authori
 	}
 
 	return &JiraRequestService{
-		baseUrl:               baseUrl,
-		defaultEndpointPrefix: defaultEndpointPrefix,
+		baseUrl:               config.Url,
+		defaultEndpointPrefix: "/rest/api/" + strconv.Itoa(config.APIVersion),
 		requestOptions: &grequests.RequestOptions{
 			HTTPClient: &http.Client{
 				Transport: &http.Transport{TLSClientConfig: &tlsConfig},
 			},
 			Headers: map[string]string{
-				"Authorization": "Basic " + authorizationToken,
+				"Authorization": "Basic " + config.Token,
 				"Content-Type":  "application/json",
 			},
 		},

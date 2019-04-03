@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+var serverKeyFlag string
 var Command = &cobra.Command{
 	Use:   "jira",
 	Short: "CLI Tools for Jira actions",
@@ -25,6 +26,14 @@ func SetDefaults() {
 
 // Initializes the command line tool
 func InitCommand() {
+	Command.PersistentFlags().StringVarP(
+		&serverKeyFlag,
+		"server",
+		"s",
+		"",
+		"The Server to use",
+	)
+
 	worklogs.InitCommand()
 	Command.AddCommand(worklogs.Command)
 
