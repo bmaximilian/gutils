@@ -1,6 +1,7 @@
 package jira
 
 import (
+	"github.com/bmaximilian/gutils/cmd/jira/projects"
 	"github.com/bmaximilian/gutils/cmd/jira/token"
 	"github.com/bmaximilian/gutils/cmd/jira/worklogs"
 	"github.com/spf13/cobra"
@@ -39,4 +40,7 @@ func InitCommand() {
 
 	token.InitCommand()
 	Command.AddCommand(token.Command)
+
+	projects.InitCommand()
+	Command.AddCommand(projects.Command)
 }
