@@ -8,11 +8,16 @@ import (
 	"strconv"
 )
 
+type JiraRequestServiceOptions struct {
+	Tempo *TempoOptions
+}
+
 type JiraRequestService struct {
 	baseUrl               string
-	defaultEndpointPrefix string
+	DefaultEndpointPrefix string
 	authorizationToken    string
 	requestOptions        *grequests.RequestOptions
+	JiraOptions           *JiraRequestServiceOptions
 }
 
 func NewJiraRequestService(config *JiraServerConfig) (*JiraRequestService, error) {
@@ -31,7 +36,7 @@ func NewJiraRequestService(config *JiraServerConfig) (*JiraRequestService, error
 
 	return &JiraRequestService{
 		baseUrl:               config.Url,
-		defaultEndpointPrefix: "/rest/api/" + strconv.Itoa(config.APIVersion),
+		DefaultEndpointPrefix: "/rest/api/" + strconv.Itoa(config.APIVersion),
 		requestOptions: &grequests.RequestOptions{
 			HTTPClient: &http.Client{
 				Transport: &http.Transport{TLSClientConfig: &tlsConfig},
@@ -40,6 +45,9 @@ func NewJiraRequestService(config *JiraServerConfig) (*JiraRequestService, error
 				"Authorization": "Basic " + config.Token,
 				"Content-Type":  "application/json",
 			},
+		},
+		JiraOptions: &JiraRequestServiceOptions{
+			Tempo: config.Tempo,
 		},
 	}, nil
 }
@@ -67,7 +75,7 @@ func (j *JiraRequestService) assignOptions(options *grequests.RequestOptions) *g
 }
 
 func (j *JiraRequestService) getUrl(endpoint string) string {
-	return j.baseUrl + j.defaultEndpointPrefix + endpoint
+	return j.baseUrl + j.DefaultEndpointPrefix + endpoint
 }
 
 func (j *JiraRequestService) Get(endpoint string, options *grequests.RequestOptions) (*grequests.Response, error) {

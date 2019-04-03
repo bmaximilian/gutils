@@ -33,6 +33,8 @@ func getValidServerConfigKey(serverConfigKey string) (string, error) {
 func NewJiraServerConfigFromViper(viperKey string) *connect.JiraServerConfig {
 	config := &connect.JiraServerConfig{
 		APIVersion: 2,
+		Tempo:      &connect.TempoOptions{},
+		TlsConfig:  &connect.TLSConfig{},
 	}
 
 	if value := viper.Get(viperKey + ".url"); value != nil {
@@ -60,7 +62,8 @@ func NewJiraServerConfigFromViper(viperKey string) *connect.JiraServerConfig {
 		config.Token = value.(string)
 	}
 	if value := viper.Get(viperKey + ".tempo"); value != nil && value.(bool) {
-		config.Tempo = true
+		config.Tempo.Enabled = true
+		config.Tempo.ApiVersion = 2
 	}
 
 	if config.UserName != "" && config.Password != "" && config.Token == "" {
