@@ -7,6 +7,12 @@ import (
 	"reflect"
 )
 
+type TLSConfig struct {
+	CertPath string
+	KeyPath  string
+	Password string
+}
+
 type JiraRequestService struct {
 	baseUrl               string
 	defaultEndpointPrefix string
@@ -14,17 +20,19 @@ type JiraRequestService struct {
 	requestOptions        *grequests.RequestOptions
 }
 
-func NewJiraRequestService(baseUrl string, defaultEndpointPrefix string, authorizationToken string, certPath string, keyPath string) (*JiraRequestService, error) {
-	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		return nil, err
-	}
+func NewJiraRequestService(baseUrl string, defaultEndpointPrefix string, authorizationToken string, tlsConfigObject *TLSConfig) (*JiraRequestService, error) {
+	tlsConfig := tls.Config{}
 
-	tlsConfig := tls.Config{
-		Certificates: []tls.Certificate{cert},
-	}
+	if tlsConfigObject.CertPath != "" {
+		cert, err := tls.LoadX509KeyPair(tlsConfigObject.CertPath, tlsConfigObject.KeyPath)
+		if err != nil {
+			return nil, err
+		}
 
-	tlsConfig.BuildNameToCertificate()
+		tlsConfig.Certificates = []tls.Certificate{cert}
+
+		tlsConfig.BuildNameToCertificate()
+	}
 
 	return &JiraRequestService{
 		baseUrl:               baseUrl,
@@ -54,6 +62,10 @@ func (j *JiraRequestService) assignOptions(options *grequests.RequestOptions) *g
 
 	if !reflect.DeepEqual(options.Data, assignedOptions.Data) {
 		assignedOptions.Data = options.Data
+	}
+
+	if val, ok := options.Headers["Authorization"]; ok && val != assignedOptions.Headers["Authorization"] {
+		assignedOptions.Headers["Authorization"] = val
 	}
 
 	return &assignedOptions
