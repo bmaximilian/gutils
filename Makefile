@@ -22,6 +22,7 @@ build:
 	rm -rf ${PROJECT_PATH}/${PROJECT_BUILD_FOLDER}
 	cd ${PROJECT_PATH} && go mod tidy
 	cd ${PROJECT_PATH} && go mod verify
+	cd ${PROJECT_PATH} && go fmt
 	cd ${PROJECT_PATH} && env go build ${LDFLAGS} -o ${BUILD_FULL_PATH}/${BINARY} ${ENTRY_FILE_PATH}
 	cd ${PROJECT_PATH} && env GOOS=darwin go build ${LDFLAGS} -o ${BUILD_FULL_PATH}/darwin/${BINARY} ${ENTRY_FILE_PATH}
 	cd ${PROJECT_PATH} && env GOOS=linux go build ${LDFLAGS} -o ${BUILD_FULL_PATH}/linux/${BINARY} ${ENTRY_FILE_PATH}
@@ -46,6 +47,11 @@ clean:
 
 test:
 	cd ${PROJECT_PATH}/pkg/calculate/scale/length && go test
+
+EXPORT_NAME=${BINARY}_${VERSION}_${BUILD}.zip
+export: test build
+	cd ${PROJECT_PATH} && zip ${BUILD_FULL_PATH}/${EXPORT_NAME} gutils.config.yaml ${BUILD_FULL_PATH}/darwin/* ${BUILD_FULL_PATH}/linux/* ${BUILD_FULL_PATH}/windows/* README.md
+	@echo "\n\nExport available at ${PROJECT_PATH}/${BUILD_FULL_PATH}/${EXPORT_NAME}"
 
 %:
 	@:
