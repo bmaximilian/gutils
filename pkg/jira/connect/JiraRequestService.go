@@ -2,6 +2,8 @@ package connect
 
 import (
 	"crypto/tls"
+	"errors"
+	"github.com/bmaximilian/gutils/pkg/util/logger"
 	"github.com/levigross/grequests"
 	"net/http"
 	"reflect"
@@ -78,22 +80,55 @@ func (j *JiraRequestService) getUrl(endpoint string) string {
 	return j.baseUrl + j.DefaultEndpointPrefix + endpoint
 }
 
+func (j *JiraRequestService) handleResponseReceived(url string, options *grequests.RequestOptions, response *grequests.Response, responseErr error) (*grequests.Response, error) {
+	if responseErr != nil {
+		return response, responseErr
+	}
+
+	if response != nil && response.StatusCode > 399 {
+		logger.GetLogger().Warningln(response.String())
+		return response, errors.New(url + " responded with status code " + strconv.Itoa(response.StatusCode))
+	}
+
+	return response, nil
+}
+
 func (j *JiraRequestService) Get(endpoint string, options *grequests.RequestOptions) (*grequests.Response, error) {
-	return grequests.Get(j.getUrl(endpoint), j.assignOptions(options))
+	url := j.getUrl(endpoint)
+	assignedOptions := j.assignOptions(options)
+	response, err := grequests.Get(url, assignedOptions)
+
+	return j.handleResponseReceived(url, assignedOptions, response, err)
 }
 
 func (j *JiraRequestService) Post(endpoint string, options *grequests.RequestOptions) (*grequests.Response, error) {
-	return grequests.Post(j.getUrl(endpoint), j.assignOptions(options))
+	url := j.getUrl(endpoint)
+	assignedOptions := j.assignOptions(options)
+	response, err := grequests.Post(url, assignedOptions)
+
+	return j.handleResponseReceived(url, assignedOptions, response, err)
 }
 
 func (j *JiraRequestService) Put(endpoint string, options *grequests.RequestOptions) (*grequests.Response, error) {
-	return grequests.Put(j.getUrl(endpoint), j.assignOptions(options))
+	url := j.getUrl(endpoint)
+	assignedOptions := j.assignOptions(options)
+	response, err := grequests.Put(url, assignedOptions)
+
+	return j.handleResponseReceived(url, assignedOptions, response, err)
 }
 
 func (j *JiraRequestService) Patch(endpoint string, options *grequests.RequestOptions) (*grequests.Response, error) {
-	return grequests.Patch(j.getUrl(endpoint), j.assignOptions(options))
+	url := j.getUrl(endpoint)
+	assignedOptions := j.assignOptions(options)
+	response, err := grequests.Patch(url, assignedOptions)
+
+	return j.handleResponseReceived(url, assignedOptions, response, err)
 }
 
 func (j *JiraRequestService) Delete(endpoint string, options *grequests.RequestOptions) (*grequests.Response, error) {
-	return grequests.Delete(j.getUrl(endpoint), j.assignOptions(options))
+	url := j.getUrl(endpoint)
+	assignedOptions := j.assignOptions(options)
+	response, err := grequests.Delete(url, assignedOptions)
+
+	return j.handleResponseReceived(url, assignedOptions, response, err)
 }
