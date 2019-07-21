@@ -32,7 +32,8 @@ func GenerateWorklogXLSXExportSheet(
 		workLogReportItem := item.(models.WorkLogReportItem)
 		bodySlice := []string{
 			workLogReportItem.StartedDate.Format("Mon") + " " +
-				workLogReportItem.StartedDate.Format("2006-01-02"),
+				workLogReportItem.StartedDate.Format("2006-01-02") + " " +
+				workLogReportItem.StartedDate.Format("15:04"),
 			workLogReportItem.IssueKey,
 			workLogReportItem.TimeSpent,
 		}
