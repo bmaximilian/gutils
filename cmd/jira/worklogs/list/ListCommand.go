@@ -1,6 +1,7 @@
 package list
 
 import (
+	"encoding/json"
 	"github.com/bmaximilian/gutils/internal/jira/util"
 	jiraUtil "github.com/bmaximilian/gutils/pkg/jira/util"
 	"github.com/bmaximilian/gutils/pkg/util/logger"
@@ -8,6 +9,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/tealeg/xlsx"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -16,6 +18,7 @@ import (
 var projectsFilter string
 var user string
 var generateReportFlag bool
+var generateJsonFlag bool
 var startDateFlag string
 var endDateFlag string
 
@@ -58,6 +61,14 @@ var Command = &cobra.Command{
 
 		if filterErr != nil {
 			l.Fatalln(filterErr)
+		}
+
+		if cmd.Flag("json").Value.String() == "true" {
+			j, _ := json.Marshal(workLogReportItems)
+			writeJsonFileErr := ioutil.WriteFile("jsonexport.json", j, 0644)
+			if writeJsonFileErr != nil {
+				l.Fatalln(writeJsonFileErr)
+			}
 		}
 
 		jiraUtil.GenerateWorklogTable(table, workLogReportItems, &jiraUtil.TableOptions{WithAuthor: userNameFilter == ""})
@@ -123,5 +134,12 @@ func InitCommand() {
 		"r",
 		false,
 		"Pass that flag to generate an xslx report",
+	)
+	Command.Flags().BoolVarP(
+		&generateJsonFlag,
+		"json",
+		"j",
+		false,
+		"Generate a json file for the report",
 	)
 }
